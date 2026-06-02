@@ -19,7 +19,7 @@ namespace Intropy.BusinessIncidentService.Client;
 /// <param name="options">Client configuration, including the target Dapr app id.</param>
 public class BusinessIncidentServiceClient(
     DaprClient daprClient,
-    IOptions<BusinessIncidentServiceClientOptions> options)
+    IOptions<BusinessIncidentServiceClientOptions> options) : IBusinessIncidentServiceClient
 {
     private readonly DaprClient _daprClient = daprClient ?? throw new ArgumentNullException(nameof(daprClient));
     private readonly string _appId = options.Value.AppId ?? throw new ArgumentNullException(nameof(options));
