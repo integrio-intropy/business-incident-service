@@ -1,3 +1,4 @@
+using Intropy.Contracts.BusinessIncidentService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,7 +25,7 @@ public static class ServiceCollectionExtensions
             configureOptions?.Invoke(options);
         });
 
-        services.AddSingleton<BusinessIncidentServiceClient>();
+        services.AddSingleton<IBusinessIncidentServiceClient, BusinessIncidentServiceClient>();
 
         return services;
     }
