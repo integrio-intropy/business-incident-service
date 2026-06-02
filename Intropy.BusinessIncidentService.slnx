@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="service/src/Intropy.BusinessIncidentService.csproj" />
+  <Project Path="service/test/Intropy.BusinessIncidentService.Test.csproj" />
+  <Project Path="client/src/Intropy.BusinessIncidentService.Client.csproj" />
+</Solution>

@@ -1,0 +1,60 @@
+{{- if .Values.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "business-incident-service.fullname" . }}-migrate
+  labels:
+    {{- include "business-incident-service.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "business-incident-service.selectorLabels" . | nindent 8 }}
+        {{- with .Values.migration.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "business-incident-service.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          image: "{{ .Values.migration.image.repository }}:{{ .Values.migration.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+          env:
+            - name: USE_AZURE_AUTH
+              value: {{ .Values.database.useAzureAuth | quote }}
+            {{- if .Values.migration.database.existingSecret.name }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.migration.database.existingSecret.name }}
+                  key: {{ .Values.migration.database.existingSecret.key }}
+            {{- else }}
+            - name: DATABASE_URL
+              value: {{ .Values.migration.database.connectionString | quote }}
+            {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

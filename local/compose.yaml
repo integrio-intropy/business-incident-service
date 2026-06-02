@@ -1,0 +1,80 @@
+name: intropy-business-incident-service
+
+services:
+  business-incident-service:
+    build:
+      context: ../
+      dockerfile: ./service/Dockerfile.debug
+      platforms:
+        - linux/arm64
+    ports:
+      - "8080:8080"   # public
+      - "8081:8081"   # internal
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=business_incidents;Username=postgres;Password=password"
+      DaprComponentsConfig:InternalPubSubName: "business-incidents-internal"
+      DaprComponentsConfig:InternalTopicName: "business-incidents"
+      DaprComponentsConfig:NotificationPubSubName: "business-incidents-notifications"
+      DaprComponentsConfig:NotificationTopicName: "business-incident-notifications"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://lgtm:4317"
+
+  business-incident-service-dapr:
+    image: "daprio/daprd:latest"
+    command: [
+      "./daprd",
+      "--app-id", "business-incident-service",
+      "--app-port", "8081",
+      "--resources-path", "./dapr-components"
+    ]
+    volumes:
+      - "./dapr-components/:/dapr-components"
+    depends_on:
+      - business-incident-service
+      - rabbitmq
+      - postgres
+    network_mode: "service:business-incident-service"
+    restart: on-failure
+
+  rabbitmq:
+    image: rabbitmq:4.0.2-management
+    ports:
+      - "5672:5672"
+      - "15672:15672" # Web UI
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  postgres:
+    image: postgres:17.7-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=business_incidents
+    volumes:
+      - "./postgres/data:/var/lib/postgresql/data"
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d business_incidents"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    build:
+      context: ../migrations
+    command: ["-path", "/migrations", "-database", "postgres://postgres:password@postgres:5432/business_incidents?sslmode=disable", "up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    ports:
+      - "3000:3000"

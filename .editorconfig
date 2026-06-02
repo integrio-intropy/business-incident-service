@@ -1,0 +1,22 @@
+# .editorconfig
+
+root = true
+
+[*]
+# Unix-style newlines with a newline ending every file
+end_of_line = lf
+insert_final_newline = true
+
+[*.cs]
+# Indentation
+indent_size = 4
+indent_style = space
+
+[*{.csproj,.sln,.props}]
+indent_size = 2
+
+[*{.yaml,.yml}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab

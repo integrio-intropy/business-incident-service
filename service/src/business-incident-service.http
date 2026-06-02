@@ -1,0 +1,58 @@
+@Public = http://localhost:8080
+@Internal = http://localhost:8081
+
+POST {{Internal}}/healthz/live
+Accept: application/json
+
+### Create or retry business incident
+POST {{Internal}}/events
+Content-Type: application/json; charset=utf-8
+
+{
+  "specversion": "1.0",
+  "type": "io.intropy.business_incident.triggered",
+  "source": "urn:maxbo:customers-mdc-extractors-fno",
+  "subject": "123",
+  "id": "lk234klj234jkl234",
+  "time": "2026-03-24T00:00:00.001Z",
+  "datacontenttype": "application/json",
+  "batchid": "1",
+  "data": {
+    "description": "Failed to validate invoice",
+    "context": {
+      "invoiceId": "8923749",
+      "errorMessage": "The field 'recipient' has no value"
+    }
+  }
+}
+
+### List business incidents
+GET {{Public}}/incidents#?status=open
+Accept: application/json
+
+
+### Get business incident
+GET {{Public}}/incidents/15e195c6-c1a4-41c7-8f50-306be0db86ce
+Accept: application/json
+
+
+### Resolve business incident
+POST {{Internal}}/events
+Content-Type: application/json; charset=utf-8
+
+{
+  "specversion": "1.0",
+  "type": "io.intropy.business_incident.resolved",
+  "source": "urn:maxbo:customers-mdc-extractors-fno",
+  "subject": "123",
+  "id": "lk234klj234jkl234",
+  "time": "2026-03-24T01:00:00.001Z",
+  "datacontenttype": "application/json",
+  "batchid": "1"
+}
+
+
+
+### Get business incident events
+GET {{Public}}/incidents/15e195c6-c1a4-41c7-8f50-306be0db86ce/events
+Accept: application/json

@@ -1,0 +1,29 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: outbox-cron
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    - name: schedule
+      value: "@every 30s"
+    - name: route
+      value: /outbox/process
+scopes:
+  - business-incident-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: outbox-purge-cron
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    - name: schedule
+      value: "@every 24h"
+    - name: route
+      value: /outbox/purge
+scopes:
+  - business-incident-service

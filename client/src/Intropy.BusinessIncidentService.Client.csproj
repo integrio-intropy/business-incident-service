@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageId>Intropy.BusinessIncidentService.Client</PackageId>
+        <Description>.NET client for the Intropy Business Incident Service. Trigger, resolve, and query business incidents via Dapr service invocation.</Description>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CloudNative.CloudEvents" Version="2.8.0"/>
+        <PackageReference Include="CloudNative.CloudEvents.SystemTextJson" Version="2.8.0"/>
+        <PackageReference Include="Dapr.Client" Version="1.17.9"/>
+        <PackageReference Include="Intropy.Contracts" Version="0.1.0"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.8"/>
+        <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.8"/>
+    </ItemGroup>
+</Project>

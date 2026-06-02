@@ -1,0 +1,26 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Integrio</Authors>
+    <Company>Integrio</Company>
+    <Copyright>Copyright (c) 2026 Integrio</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/integrio-intropy/business-incident-service</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/integrio-intropy/business-incident-service</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>intropy;business-incident;cloudevents;dapr</PackageTags>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+</Project>
