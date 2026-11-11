@@ -9,6 +9,10 @@ namespace Intropy.BusinessIncidentService.Endpoints;
 
 public static class IncidentEndpoints
 {
+    // Answer on the public port (Kubernetes Service, local tooling) and on the internal port,
+    // which is the Dapr app port, so the query API can be reached through Dapr service invocation.
+    private static readonly string[] QueryHosts = [$"*:{Ports.Public}", $"*:{Ports.Internal}"];
+
     public static IEndpointRouteBuilder MapIncidentEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapGet("/incidents/{id:guid}",
@@ -24,7 +28,7 @@ public static class IncidentEndpoints
             .WithName("getIncident")
             .WithDisplayName("Get Incident")
             .Produces<IncidentResponse>()
-            .RequireHost($"*:{Ports.Public}");
+            .RequireHost(QueryHosts);
 
         endpoints.MapGet("/incidents",
                 async ([AsParameters] IncidentFilter filter,
@@ -47,7 +51,7 @@ public static class IncidentEndpoints
             .WithName("listIncidents")
             .WithDisplayName("List Incidents")
             .Produces<IncidentListResponse>()
-            .RequireHost($"*:{Ports.Public}");
+            .RequireHost(QueryHosts);
 
         endpoints.MapGet("/incidents/{id:guid}/events",
                 async ([FromRoute] Guid id, [FromServices] IncidentRepository repository,
@@ -66,7 +70,7 @@ public static class IncidentEndpoints
             .WithName("getIncidentEvents")
             .WithDisplayName("Get Incident Events")
             .Produces<IncidentEventResponse>()
-            .RequireHost($"*:{Ports.Public}");
+            .RequireHost(QueryHosts);
 
         endpoints.MapPost("/incidents/{id:guid}/resolve",
                 async ([FromRoute] Guid id, [FromServices] IncidentRepository repository,
@@ -79,7 +83,7 @@ public static class IncidentEndpoints
             .WithDisplayName("Resolve Incident")
             .Produces(200)
             .Produces<ProblemDetails>()
-            .RequireHost($"*:{Ports.Public}");
+            .RequireHost(QueryHosts);
 
         return endpoints;
     }

@@ -95,7 +95,8 @@ public class BusinessIncidentServiceClient(
     /// <exception cref="BusinessIncidentServiceException">The service returned an error response or could not be reached.</exception>
     public async Task<bool> ResolveManual(Guid id)
     {
-        var response = await InvokeRaw(HttpMethod.Post, $"incidents/{id}/resolve");
+        using var response = await InvokeRaw(
+            new HttpRequestMessage(HttpMethod.Post, $"incidents/{id}/resolve"), allowNotFound: true);
         return response.StatusCode != HttpStatusCode.NotFound;
     }
 
@@ -126,35 +127,36 @@ public class BusinessIncidentServiceClient(
 
     private async Task<T?> Invoke<T>(HttpMethod method, string path, bool allowNotFound = false)
     {
-        var response = await InvokeRaw(method, path);
+        using var response = await InvokeRaw(new HttpRequestMessage(method, path), allowNotFound);
 
-        if (allowNotFound && response.StatusCode == HttpStatusCode.NotFound)
+        if (response.StatusCode == HttpStatusCode.NotFound)
             return default;
-
-        return await JsonSerializer.DeserializeAsync<T>(
-            await response.Content.ReadAsStreamAsync());
-    }
-
-    private async Task<HttpResponseMessage> InvokeRaw(HttpMethod method, string path)
-    {
-        using var client = _daprClient.CreateInvokableHttpClient(_appId);
-        var request = new HttpRequestMessage(method, path);
 
         try
         {
-            var response = await client.SendAsync(request);
+            return await JsonSerializer.DeserializeAsync<T>(
+                await response.Content.ReadAsStreamAsync());
+        }
+        catch (JsonException je)
+        {
+            throw new BusinessIncidentServiceException(
+                "Failed to read the business incident service response",
+                (int)response.StatusCode, null, je);
+        }
+    }
 
-            if (!response.IsSuccessStatusCode)
-            {
-                var problemDetails = await response.Content.ReadAsStringAsync();
-                throw new BusinessIncidentServiceException(
-                    "Failed to call the business incident service",
-                    (int)response.StatusCode,
-                    problemDetails,
-                    null);
-            }
+    /// <summary>
+    /// Sends a request through Dapr service invocation. Returns the response when it is successful, or when it is
+    /// a 404 and <paramref name="allowNotFound"/> is set; throws <see cref="BusinessIncidentServiceException"/> otherwise.
+    /// </summary>
+    private async Task<HttpResponseMessage> InvokeRaw(HttpRequestMessage request, bool allowNotFound = false)
+    {
+        using var client = _daprClient.CreateInvokableHttpClient(_appId);
 
-            return response;
+        HttpResponseMessage response;
+        try
+        {
+            response = await client.SendAsync(request);
         }
         catch (InvocationException ie)
         {
@@ -169,6 +171,19 @@ public class BusinessIncidentServiceClient(
         catch (Exception ex)
         {
             throw new BusinessIncidentServiceException("Unknown exception", ex);
+        }
+
+        if (response.IsSuccessStatusCode || (allowNotFound && response.StatusCode == HttpStatusCode.NotFound))
+            return response;
+
+        using (response)
+        {
+            var problemDetails = await response.Content.ReadAsStringAsync();
+            throw new BusinessIncidentServiceException(
+                "Failed to call the business incident service",
+                (int)response.StatusCode,
+                problemDetails,
+                null);
         }
     }
 
@@ -186,41 +201,11 @@ public class BusinessIncidentServiceClient(
 
     private async Task SendEvent(CloudEvent cloudEvent)
     {
-        using var client = _daprClient.CreateInvokableHttpClient(_appId);
-        var content = cloudEvent.ToHttpContent(ContentMode.Structured, JsonEventFormatter);
+        var request = new HttpRequestMessage(HttpMethod.Post, "events")
+        {
+            Content = cloudEvent.ToHttpContent(ContentMode.Structured, JsonEventFormatter)
+        };
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "events");
-        request.Content = content;
-
-        try
-        {
-            var response = await client.SendAsync(request);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var problemDetails = await response.Content.ReadAsStringAsync();
-                throw new BusinessIncidentServiceException(
-                    "Failed to call the business incident service",
-                    (int)response.StatusCode,
-                    problemDetails,
-                    null);
-            }
-        }
-        catch (InvocationException ie)
-        {
-            throw new BusinessIncidentServiceException(
-                "Failed to call the business incident service",
-                500,
-                ie.Message,
-                ie);
-        }
-        catch (DaprException de)
-        {
-            throw new BusinessIncidentServiceException("Failed to communicate with dapr", de);
-        }
-        catch (Exception ex)
-        {
-            throw new BusinessIncidentServiceException("Unknown exception", ex);
-        }
+        using var _ = await InvokeRaw(request);
     }
 }
