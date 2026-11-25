@@ -1,6 +1,6 @@
-FROM migrate/migrate:v4.19.1 AS migrate
+FROM migrate/migrate:v4.20.1 AS migrate
 
-FROM alpine:3.23.3
+FROM alpine:3.24
 
 RUN apk add --no-cache wget
 
