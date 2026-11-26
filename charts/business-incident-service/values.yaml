@@ -122,9 +122,11 @@ database:
     name: ""
     key: ""
 
+# Runs database migrations as an init container in each app pod.
+# The init container shares the app pod's labels and service account (see podLabels/serviceAccount).
 migration:
   enabled: true
-  podLabels: {}
+  resources: {}
   image:
     repository: harbor.intropy.io/platform/business-incident-service-migrate
     tag: ""

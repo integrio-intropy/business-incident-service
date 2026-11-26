@@ -37,6 +37,38 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.migration.enabled }}
+      initContainers:
+        # Runs before the app container in every pod. golang-migrate holds a Postgres
+        # advisory lock, so concurrent pods are safe; pods that start after the schema
+        # is current just log "no change".
+        - name: migrate
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          image: "{{ .Values.migration.image.repository }}:{{ .Values.migration.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+          env:
+            - name: USE_AZURE_AUTH
+              value: {{ .Values.database.useAzureAuth | quote }}
+            {{- if .Values.migration.database.existingSecret.name }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.migration.database.existingSecret.name }}
+                  key: {{ .Values.migration.database.existingSecret.key }}
+            {{- else }}
+            - name: DATABASE_URL
+              value: {{ .Values.migration.database.connectionString | quote }}
+            {{- end }}
+          {{- with .Values.migration.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
